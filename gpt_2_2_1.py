@@ -9,60 +9,6 @@ from selenium.webdriver.common.action_chains import ActionChains
 import csv
 import time
 from webdriver_manager.chrome import ChromeDriverManager
-import pickle
-import os
-
-# Path to save cookies
-cookies_file = 'cookies.pkl'
-
-# Function to save cookies
-def save_cookies(driver):
-    with open(cookies_file, 'wb') as file:
-        pickle.dump(driver.get_cookies(), file)
-
-# Function to load cookies
-def load_cookies(driver):
-    if os.path.exists(cookies_file):
-        with open(cookies_file, 'rb') as file:
-            cookies = pickle.load(file)
-            for cookie in cookies:
-                driver.add_cookie(cookie)
-
-# Function to log in to TradingView
-def login_to_tradingview(driver, email, password):
-    driver.get("https://www.tradingview.com/accounts/signin/")
-    
-    try:
-        if not os.path.exists(cookies_file):
-            # Perform login only if cookies file doesn't exist
-            email_input = WebDriverWait(driver, 20).until(
-                EC.visibility_of_element_located((By.XPATH, '//*[@id="id_username"]'))
-            )
-            email_input.send_keys(email)
-
-            password_input = WebDriverWait(driver, 20).until(
-                EC.visibility_of_element_located((By.XPATH, '//*[@id="id_password"]'))
-            )
-            password_input.send_keys(password)
-
-            login_button = WebDriverWait(driver, 20).until(
-                EC.element_to_be_clickable((By.XPATH, '/html/body/div[3]/div/div/div[1]/div/div[2]/div[2]/div/div/div/form/button/span/span'))
-            )
-            login_button.click()
-
-            # Allow time for the login to complete
-            time.sleep(10)
-            
-            # Save cookies after successful login
-            save_cookies(driver)
-        else:
-            # Load cookies if the file exists
-            driver.get("https://www.tradingview.com/")
-            load_cookies(driver)
-            driver.refresh()
-
-    except Exception as e:
-        print("An error occurred during login:", e)
 
 # Setup Chrome options
 def setup_driver():
@@ -81,13 +27,13 @@ def login_to_tradingview(driver, email, password):
             EC.visibility_of_element_located((By.XPATH, '//*[@id="id_username"]'))
         )
         email_input.send_keys(email)
-        time.sleep(10)
+
         # Fill in the password field
         password_input = WebDriverWait(driver, 20).until(
             EC.visibility_of_element_located((By.XPATH, '//*[@id="id_password"]'))
         )
         password_input.send_keys(password)
-        time.sleep(10)
+
         # Click the login button
         login_button = WebDriverWait(driver, 20).until(
             EC.element_to_be_clickable((By.XPATH, '/html/body/div[3]/div/div/div[1]/div/div[2]/div[2]/div/div/div/form/button/span/span'))
@@ -169,62 +115,33 @@ def move_chart_and_capture_ohlc(driver, csv_file, movements=10):
         # Allow time for the chart to update
         time.sleep(1)
 
-def get_number_of_movements(driver):
-    movements_text = WebDriverWait(driver, 20).until(
-        EC.visibility_of_element_located((By.XPATH, '/html/body/div[2]/div[5]/div[1]/div[1]/div/div[2]/div[1]/div[2]/div/div[2]/div[2]/div/div[4]/div[2]/div/div/div'))
-    ).text
-    
-    # Remove commas and convert to integer
-    movements_text = movements_text.replace(',', '')
-    return int(float(movements_text))
-
-
-def get_dynamic_filename(driver):
-    name = WebDriverWait(driver, 20).until(
-        EC.visibility_of_element_located((By.XPATH, '/html/body/div[2]/div[5]/div[1]/div[1]/div/div[2]/div[1]/div[2]/div/div[2]/div[1]/div[1]/div[1]/div[1]/div[1]/button'))
-    ).text
-
-    timeframe = WebDriverWait(driver, 20).until(
-        EC.visibility_of_element_located((By.XPATH, '/html/body/div[2]/div[5]/div[1]/div[1]/div/div[2]/div[1]/div[2]/div/div[2]/div[1]/div[1]/div[1]/div[1]/div[3]/button'))
-    ).text
-
-    return f"{name}_{timeframe}.csv"
-
-
-
 # Main function to run the process
 def main(email, password):
     driver = setup_driver()
-
-    # Log in to TradingView
-    login_to_tradingview(driver, email, password)
-
-    # Open TradingView chart URL
-    driver.get("https://www.tradingview.com/chart/Ow6LCR4w/")  # Update the URL to the specific chart if necessary
-
-    # Allow the page to load completely
-    time.sleep(60)
-
-    # Get dynamic filename
-    csv_file = get_dynamic_filename(driver)
+    csv_file = "ohlc_data_with_time.csv"
 
     # Write CSV header
     with open(csv_file, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['Open', 'High', 'Low', 'Close', 'Datetime'])
 
-    # Get the number of movements
-    movements = get_number_of_movements(driver)
+    try:
+        login_to_tradingview(driver, email, password)
 
-    # Move the chart and capture OHLC data
-    move_chart_and_capture_ohlc(driver, csv_file, movements=movements)
+        # Open TradingView chart URL
+        driver.get("https://www.tradingview.com/chart/Ow6LCR4w/")  # Update the URL to the specific chart if necessary
 
-    # Close the browser
-    driver.quit()
+        # Allow the page to load completely
+        time.sleep(5)
+
+        # Move the chart and capture OHLC data
+        move_chart_and_capture_ohlc(driver, csv_file, movements=10)
+
+    finally:
+        # Close the browser
+        driver.quit()
 
     print(f"OHLC and time data has been saved to {csv_file}.")
-
-
 
 # Execute the main function
 if __name__ == "__main__":
