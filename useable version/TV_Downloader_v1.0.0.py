@@ -1,5 +1,6 @@
 #autologin with delay and capture 
 #options downloader
+#gpt_2_2_3.py
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -307,9 +308,9 @@ if __name__ == "__main__":
     # Replace with your TradingView credentials
     email = "gauranshhitachi@gmail.com"
     password = "Trad3!ndi@Gogo"
-    base = "FINNIFTY"
-    date = "240820"
-    strike_range = (22400, 24200)  # Range of strikes
+    base = "BANKNIFTY"
+    date = "240821"
+    strike_range = (48500, 54000)  # Range of strikes
     interval = 100  # Interval between strikes
     tf_list = ["15"]  # List of timeframes
 
