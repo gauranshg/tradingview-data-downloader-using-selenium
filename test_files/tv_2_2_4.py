@@ -1,5 +1,6 @@
 #autologin with delay and capture 
 #options downloader
+#gpt_2_2_3.py
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -14,6 +15,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 import pickle
 import os
 import pandas as pd
+
+debug_v = False
 
 def remove_duplicates(input_csv, output_csv):
     """
@@ -32,6 +35,8 @@ def remove_duplicates(input_csv, output_csv):
     
     # Save the cleaned DataFrame to a new CSV file
     df_cleaned.to_csv(output_csv, index=False)
+
+    return len(df_cleaned)
 
 # Example usage
 def generate_scrip_list(base, date, strike_range, interval, tf_list):
@@ -206,6 +211,9 @@ def write_ohlc_to_csv(csv_file, ohlc_data):
 
 # Function to move the chart left and capture OHLC data
 def move_chart_and_capture_ohlc(driver, csv_file, movements=10):
+    if debug_v:
+        movements = 10
+
     actions = ActionChains(driver)
 
     with open(csv_file, mode='a', newline='') as file:
@@ -273,8 +281,8 @@ def download_scrip(driver,link):
 
     # Move the chart and capture OHLC data
     move_chart_and_capture_ohlc(driver, csv_file, movements=movements)
-    remove_duplicates(csv_file, 'cleaned_'+csv_file)
-    return csv_file
+    rows = remove_duplicates(csv_file, 'cleaned_'+csv_file)
+    return csv_file, rows, movements
 
 
 # Main function to run the process
@@ -292,7 +300,10 @@ def main(email, password):
         scrip = item["scrip"]
         tf = item["TF"]
         url = f"https://www.tradingview.com/chart/Ow6LCR4w/?symbol={scrip}&interval={tf}"
-        csv_file = download_scrip(driver, url)
+        csv_file, rows, movemments = download_scrip(driver, url)
+        with open("log.csv", mode='a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow([scrip,tf,rows,movemments,"Completed",csv_file])
         print(f"OHLC and time data has been saved to {csv_file}.")
 
     # Close the browser
@@ -307,9 +318,9 @@ if __name__ == "__main__":
     # Replace with your TradingView credentials
     email = "gauranshhitachi@gmail.com"
     password = "Trad3!ndi@Gogo"
-    base = "FINNIFTY"
-    date = "240820"
-    strike_range = (22400, 24200)  # Range of strikes
+    base = "BANKNIFTY"
+    date = "240821"
+    strike_range = (48500, 54000)  # Range of strikes
     interval = 100  # Interval between strikes
     tf_list = ["15"]  # List of timeframes
 
