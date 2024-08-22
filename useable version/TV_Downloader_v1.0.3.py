@@ -23,11 +23,32 @@ import pyautogui
 import pygetwindow as gw
 import pyautogui
 import time
+from selenium.common.exceptions import NoSuchElementException
 
 debug_v = False
 failed =[]
 force_rerun = True
 max_run = 1
+
+def delete_element_if_exists(xpath, driver):
+    try:
+        element = driver.find_element("xpath", xpath)
+        # Execute JavaScript to remove the element
+        driver.execute_script("""
+        var element = arguments[0];
+        element.parentNode.removeChild(element);
+        """, element)
+        print(f"Deleted element: {xpath}")
+    except NoSuchElementException:
+        print(f"Element not found: {xpath}")
+
+def debug(driver):
+    delete_element_if_exists("/html/body/div[6]/div[3]/div/div[2]",driver)
+    delete_element_if_exists("/html/body/div[6]/div[3]/div/div",driver)
+    current_x, current_y = pyautogui.position()
+    pyautogui.moveTo(current_x, current_y + 5)
+    time.sleep(1)
+    pyautogui.moveTo(current_x, current_y)
 
 def maximize_and_focus_window(partial_title):
     # Find windows that contain the partial title
@@ -252,12 +273,21 @@ def move_chart_and_capture_ohlc(driver, csv_file, movements=10):
         movements = 10
 
     actions = ActionChains(driver)
-
-    with open(csv_file, mode='a', newline='') as file:
+    latest_ohlc_data = capture_ohlc(driver)
+    with open(csv_file, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        for _ in range(movements):
+        threshold = 0
+        for i in range(movements):
+            threshold = min(threshold, i)
             # Capture OHLC values and time data
             ohlc_data = capture_ohlc(driver)
+            while ohlc_data == latest_ohlc_data and threshold > 0:
+                print("debugging")
+                debug(driver)
+                ohlc_data = capture_ohlc(driver)
+                threshold = threshold - 1
+                if threshold <= 0:
+                    return
 
             # Write the OHLC values and time data to the CSV file
             if ohlc_data[0] is not None:
@@ -307,9 +337,7 @@ def download_scrip(driver,link):
     current_x, current_y = pyautogui.position()
 
 # Move the mouse 5 pixels down (vertically)
-    pyautogui.moveTo(current_x, current_y + 5)
-    time.sleep(1)
-    pyautogui.moveTo(current_x, current_y)
+
 
     # Get dynamic filename
     csv_file = get_dynamic_filename(driver)
@@ -391,7 +419,7 @@ if __name__ == "__main__":
 
     # Generate list
     #list_of_values = generate_scrip_list(base, date, strike_range, interval, tf_list)
-    list_of_values = [{"scrip":"NIFTY", "TF":"15"},{"scrip":"BANKNIFTY", "TF":"15"},{"scrip":"FINNIFTY", "TF":"15"}]
+    list_of_values = [{"scrip":"NIFTY", "TF":"15"},{"scrip":"BANKNIFTY", "TF":"15"},{"scrip":"FINIFTY", "TF":"15"}]
     for item in list_of_values:
         print(item)
     main("", "",list_of_values)
