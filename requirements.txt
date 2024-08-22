@@ -1,0 +1,5 @@
+pyautogui
+selenium
+webdriver_manager
+pandas
+pygetwindow
