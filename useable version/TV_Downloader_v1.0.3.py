@@ -1,6 +1,6 @@
 #autologin with delay and capture 
 #options downloader
-#gpt_2_2_4.py
+#gpt_2_2_7.py
 #debug
 #log.csv
 #mouse move
@@ -274,13 +274,17 @@ def move_chart_and_capture_ohlc(driver, csv_file, movements=10):
 
     actions = ActionChains(driver)
     latest_ohlc_data = capture_ohlc(driver)
+    print(latest_ohlc_data)
     with open(csv_file, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
         threshold = 0
         for i in range(movements):
-            threshold = min(threshold, i)
+            if i > 10:
+                threshold = 10
+            print("t: " + str(threshold) +" i: " + str(i))
             # Capture OHLC values and time data
             ohlc_data = capture_ohlc(driver)
+            print(ohlc_data)
             while ohlc_data == latest_ohlc_data and threshold > 0:
                 print("debugging")
                 debug(driver)

@@ -1,6 +1,6 @@
 #autologin with delay and capture 
 #options downloader
-#gpt_2_2_4.py
+#gpt_2_2_7.py
 #debug
 #log.csv
 #mouse move
@@ -30,9 +30,9 @@ failed =[]
 force_rerun = True
 max_run = 1
 
-def delete_element_if_exists(xpath,driver):
+def delete_element_if_exists(xpath, driver):
     try:
-        element = driver.find_element_by_xpath(xpath)
+        element = driver.find_element("xpath", xpath)
         # Execute JavaScript to remove the element
         driver.execute_script("""
         var element = arguments[0];
@@ -274,14 +274,21 @@ def move_chart_and_capture_ohlc(driver, csv_file, movements=10):
 
     actions = ActionChains(driver)
     latest_ohlc_data = capture_ohlc(driver)
+    print(latest_ohlc_data)
     with open(csv_file, mode='a', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
-        for _ in range(movements):
-            threshold = 10
+        threshold = 0
+        for i in range(movements):
+            if i > 10:
+                threshold = 10
+            print("t: " + str(threshold) +" i: " + str(i))
             # Capture OHLC values and time data
             ohlc_data = capture_ohlc(driver)
-            while ohlc_data == latest_ohlc_data:
+            print(ohlc_data)
+            while ohlc_data == latest_ohlc_data and threshold > 0:
+                print("debugging")
                 debug(driver)
+                ohlc_data = capture_ohlc(driver)
                 threshold = threshold - 1
                 if threshold <= 0:
                     return
